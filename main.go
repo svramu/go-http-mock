@@ -5,7 +5,9 @@ import (
 	"html/template"
 	"io/ioutil"
 	"log"
+	"net/http"
 	"os"
+	"time"
 
 	"gopkg.in/yaml.v3"
 )
@@ -39,12 +41,36 @@ func main() {
 	var c Conf
 	c.parse("conf.yaml")
 
+	fmt.Println("---- ---- ---- ----")
+	fmt.Println(time.Now().Format("2006 Aug 3"))
 	fmt.Println(c)
 
 	for i, r := range c.Rules {
+		fmt.Println("...")
 		fmt.Println(i, r.Callback)
 		t := template.Must(template.New("callback").Parse(r.Callback))
+		fmt.Print("  ")
 		t.Execute(os.Stdout, c.Env)
 		fmt.Println()
 	}
+
+	fmt.Println("...")
+	http.HandleFunc("/", handleAll)
+	http.ListenAndServe(":6174", nil)
+}
+
+func handleAll(w http.ResponseWriter, req *http.Request) {
+	out := req.URL.Path + "?" + req.URL.RawQuery
+
+	fmt.Fprintf(w, "Hello, %q", out)
+	fmt.Println(out)
+
+	resp, err := http.Get("http://example.com/")
+	if err != nil {
+		// handle error
+	}
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	fmt.Println(string(body))
 }

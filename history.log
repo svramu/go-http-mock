@@ -1,0 +1,10 @@
+---- ---- ---- ----
+2019 Aug 5
+{map[blue:black god:23] [{https://github.com/svramu/go-http-mock https://github.com/svramu/go-http-mock/{{.blue}} 200} {https://github.com/svramu/go-http-mock2 https://github.com/svramu/go-http-mock2/{{.god}} 0}]}
+...
+0 https://github.com/svramu/go-http-mock/{{.blue}}
+  https://github.com/svramu/go-http-mock/black
+...
+1 https://github.com/svramu/go-http-mock2/{{.god}}
+  https://github.com/svramu/go-http-mock2/23
+...

@@ -1,2 +1,10 @@
-hits: 5
-time: 5000000
+env:
+  Blue: black
+  God: 23
+rules:
+  - request: https://github.com/svramu/go-http-mock
+    callback: https://github.com/svramu/go-http-mock/{{.Blue}}
+    delay: 200
+  - request: https://github.com/svramu/go-http-mock2
+    callback: https://github.com/svramu/go-http-mock2/{{.God}}
+ 

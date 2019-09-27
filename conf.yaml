@@ -2,7 +2,8 @@ env:
   blue: black
   god: 23
 rules:
-  - request: /say/black
+  - request: /say/color #/say/color?blue=red&num=7
+    request-template: /say/color.+blue=(?P<blue>[a-zA-Z]+).*
     callback: http://localhost:6174/{{.blue}}
   - request: /say/23
     callback: http://www.example.com

@@ -6,6 +6,7 @@ import (
 	"html/template"
 	"io/ioutil"
 	"log"
+	"math/rand"
 	"net/http"
 	"strings"
 	"time"
@@ -17,7 +18,6 @@ import (
 type Rule struct {
 	Request  string
 	Callback string
-	Delay    int // In Millis
 }
 
 // Conf ...
@@ -65,6 +65,8 @@ func handleAll(w http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		fmt.Println("error 0:", err.Error())
 	} else {
+		dur := time.Duration(500 + rand.Intn(500))
+		time.Sleep(dur * time.Millisecond)
 		callHTTP(transform(r.Callback, c.Env))
 	}
 }
@@ -78,7 +80,7 @@ func transform(ts string, data interface{}) string {
 }
 
 func callHTTP(url string) {
-	fmt.Println("http:", url)
+	fmt.Println("call", url)
 	resp, err := http.Get(url)
 	if err != nil {
 		fmt.Println("error 1:", err)

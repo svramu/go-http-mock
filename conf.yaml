@@ -4,7 +4,6 @@ env:
 rules:
   - request: /say/black
     callback: http://localhost:6174/{{.blue}}
-    delay: 200
   - request: /say/23
-    callback: http://localhost:6174/{{.god}}
+    callback: http://www.example.com
  

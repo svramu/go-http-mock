@@ -2,9 +2,9 @@ env:
   blue: black
   god: 23
 rules:
-  - request: https://github.com/svramu/go-http-mock
+  - request: /say/black
     callback: https://github.com/svramu/go-http-mock/{{.blue}}
     delay: 200
-  - request: https://github.com/svramu/go-http-mock2
+  - request: /say/23
     callback: https://github.com/svramu/go-http-mock2/{{.god}}
  

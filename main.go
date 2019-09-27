@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"gopkg.in/yaml.v3"
@@ -37,8 +38,18 @@ func (c *Conf) parse(pathToFile string) *Conf {
 	return c
 }
 
+func (c *Conf) match(path string) (Rule, error) {
+	for _, r := range c.Rules {
+		if strings.HasPrefix(r.Request, path) {
+			return r, nil
+		}
+	}
+	return Rule{}, fmt.Errorf("%q", path)
+}
+
+var c Conf
+
 func main() {
-	var c Conf
 	c.parse("conf.yaml")
 
 	fmt.Println("---- ---- ---- ----")
@@ -47,7 +58,9 @@ func main() {
 
 	for i, r := range c.Rules {
 		fmt.Println("...")
-		fmt.Println(i, r.Callback)
+		fmt.Println(i)
+		fmt.Println("  ", r.Request)
+		fmt.Println("  ", r.Callback)
 		t := template.Must(template.New("callback").Parse(r.Callback))
 		fmt.Print("  ")
 		t.Execute(os.Stdout, c.Env)
@@ -61,16 +74,24 @@ func main() {
 
 func handleAll(w http.ResponseWriter, req *http.Request) {
 	out := req.URL.Path + "?" + req.URL.RawQuery
+	fmt.Println(out, req.URL.Path)
 
-	fmt.Fprintf(w, "Hello, %q", out)
-	fmt.Println(out)
-
-	resp, err := http.Get("http://example.com/")
+	r, err := c.match(req.URL.Path)
 	if err != nil {
-		// handle error
+		fmt.Println("error:", err.Error())
+	} else {
+		fmt.Println("ok:", r)
+		t := template.Must(template.New("callback").Parse(r.Callback))
+		t.Execute(os.Stdout, c.Env)
+		fmt.Println()
 	}
-	defer resp.Body.Close()
 
-	body, err := ioutil.ReadAll(resp.Body)
-	fmt.Println(string(body))
+	// resp, err := http.Get("http://example.com/")
+	// if err != nil {
+	// 	// handle error
+	// }
+	// defer resp.Body.Close()
+
+	// body, err := ioutil.ReadAll(resp.Body)
+	// fmt.Println(string(body))
 }

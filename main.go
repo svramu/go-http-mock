@@ -1,12 +1,12 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"html/template"
 	"io/ioutil"
 	"log"
 	"net/http"
-	"os"
 	"strings"
 	"time"
 
@@ -51,47 +51,46 @@ var c Conf
 
 func main() {
 	c.parse("conf.yaml")
-
 	fmt.Println("---- ---- ---- ----")
 	fmt.Println(time.Now().Format("2006 Aug 3"))
-	fmt.Println(c)
-
-	for i, r := range c.Rules {
-		fmt.Println("...")
-		fmt.Println(i)
-		fmt.Println("  ", r.Request)
-		fmt.Println("  ", r.Callback)
-		t := template.Must(template.New("callback").Parse(r.Callback))
-		fmt.Print("  ")
-		t.Execute(os.Stdout, c.Env)
-		fmt.Println()
-	}
-
-	fmt.Println("...")
 	http.HandleFunc("/", handleAll)
 	http.ListenAndServe(":6174", nil)
 }
 
 func handleAll(w http.ResponseWriter, req *http.Request) {
 	out := req.URL.Path + "?" + req.URL.RawQuery
-	fmt.Println(out, req.URL.Path)
+	fmt.Println(out)
 
 	r, err := c.match(req.URL.Path)
 	if err != nil {
-		fmt.Println("error:", err.Error())
+		fmt.Println("error 0:", err.Error())
 	} else {
-		fmt.Println("ok:", r)
-		t := template.Must(template.New("callback").Parse(r.Callback))
-		t.Execute(os.Stdout, c.Env)
-		fmt.Println()
+		callHTTP(transform(r.Callback, c.Env))
+	}
+}
+
+func transform(ts string, data interface{}) string {
+	buf := &bytes.Buffer{}
+	t := template.Must(template.New("callback").Parse(ts))
+	t.Execute(buf, data)
+	fmt.Println("transform:", ts, buf.String())
+	return buf.String()
+}
+
+func callHTTP(url string) {
+	fmt.Println("http:", url)
+	resp, err := http.Get(url)
+	if err != nil {
+		fmt.Println("error 1:", err)
+		return
+	}
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Println("error 2:", err)
+		return
 	}
 
-	// resp, err := http.Get("http://example.com/")
-	// if err != nil {
-	// 	// handle error
-	// }
-	// defer resp.Body.Close()
-
-	// body, err := ioutil.ReadAll(resp.Body)
-	// fmt.Println(string(body))
+	fmt.Println(len(string(body)))
 }

@@ -3,8 +3,8 @@ env:
   god: 23
 rules:
   - request: /say/black
-    callback: https://github.com/svramu/go-http-mock/{{.blue}}
+    callback: http://localhost:6174/{{.blue}}
     delay: 200
   - request: /say/23
-    callback: https://github.com/svramu/go-http-mock2/{{.god}}
+    callback: http://localhost:6174/{{.god}}
  

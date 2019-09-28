@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"errors"
+	"flag"
 	"fmt"
 	"html/template"
 	"io"
@@ -11,6 +12,7 @@ import (
 	"math/rand"
 	"net/http"
 	"regexp"
+	"strconv"
 	"time"
 
 	"gopkg.in/yaml.v3"
@@ -97,12 +99,17 @@ func transform(ts string, data interface{}) string {
 var c Conf
 
 func main() {
-	c.parse("conf.yaml")
-	fmt.Println("---- ---- ---- ----")
-	fmt.Println(time.Now())
+	port := flag.Int("p", 6174, "port number to run at")
+	conf := flag.String("c", "conf.yaml", "config yaml file path")
+	flag.Parse()
+	strPort := strconv.Itoa(*port)
+
+	c.parse(*conf)
+	fmt.Println("Server running at http://localhost:" + strPort)
+	fmt.Println(time.Now().Format("Mon, Jan 2 2006, 3:04 -0700 MST "))
 	fmt.Println(".")
 	http.HandleFunc("/", handleAll)
-	http.ListenAndServe(":6174", nil)
+	http.ListenAndServe(":"+strPort, nil)
 }
 
 func handleAll(w http.ResponseWriter, req *http.Request) {

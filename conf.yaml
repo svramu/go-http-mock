@@ -1,10 +1,21 @@
-env:
-  blue: black
-  god: 23
 rules:
-  - request: /say/color #/say/color?blue=red&num=7
-    request-template: /say/color.+blue=(?P<blue>[a-zA-Z]+).*
-    callback: http://localhost:6174/{{.blue}}
-  - request: /say/23
-    callback: http://www.example.com
+  - request: 
+      url: /say/color.+blue=(?P<blue>[a-zA-Z]+)
+      method: GET
+    callback: 
+      url: http://localhost:6174/{{.blue}}
+      method: POST
+  - request: 
+      url: /say/23
+    callback: 
+      url: http://localhost:3000/answer
+  - request: 
+      url: .*
+    callback: 
+      url: http://www.example.com
+  - request: 
+      url: .*
+      method: POST
+    callback: 
+      url: http://www.example2.com
  

@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"html/template"
 	"io"
@@ -10,22 +11,33 @@ import (
 	"math/rand"
 	"net/http"
 	"regexp"
-	"strings"
 	"time"
 
 	"gopkg.in/yaml.v3"
 )
 
+// Call ...
+type Call struct {
+	URL    string
+	Method string
+}
+
+func (c *Call) method() string {
+	if c.Method == "" {
+		return "GET"
+	}
+	return c.Method
+}
+
 // Rule ...
 type Rule struct {
-	Request         string
-	RequestTemplate string `yaml:"request-template"`
-	Callback        string
+	Request  Call
+	Callback Call
 }
 
 // Conf ...
 type Conf struct {
-	Env   map[string]string
+	//Env   map[string]string // TBD - not used now
 	Rules []Rule
 }
 
@@ -41,46 +53,31 @@ func (c *Conf) parse(pathToFile string) *Conf {
 	return c
 }
 
-func (c *Conf) match(path string) (Rule, error) {
+func (c *Conf) match(method, url string) (Call, error) {
+	outCall := Call{}
 	for _, r := range c.Rules {
-		if strings.HasPrefix(r.Request, path) {
-			return r, nil
+		//fmt.Println("**", r.Request)
+		data := captureRegex(r.Request.URL, url)
+		if data == nil {
+			continue
 		}
+		if method != r.Request.method() {
+			continue
+		}
+		outCall.URL = transform(r.Callback.URL, data)
+		outCall.Method = r.Callback.Method
+		return outCall, nil
 	}
-	return Rule{}, fmt.Errorf("%q", path)
-}
-
-var c Conf
-
-func main() {
-	c.parse("conf.yaml")
-	fmt.Println("---- ---- ---- ----")
-	fmt.Println(time.Now().Format("2006 Aug 3"))
-	fmt.Println(".")
-	http.HandleFunc("/", handleAll)
-	http.ListenAndServe(":6174", nil)
-}
-
-func handleAll(w http.ResponseWriter, req *http.Request) {
-	out := req.URL.Path + "?" + req.URL.RawQuery
-	fmt.Println("req\t>", out)
-
-	r, err := c.match(req.URL.Path)
-	if err != nil {
-		//fmt.Println("error 0:", err.Error())
-	} else {
-		data := captureRegex(r.RequestTemplate, out)
-		//fmt.Println(data)
-
-		dur := time.Duration(500 + rand.Intn(500))
-		time.Sleep(dur * time.Millisecond)
-		callHTTP(transform(r.Callback, data))
-	}
+	//fmt.Println("***", method, url)
+	return outCall, errors.New("no match")
 }
 
 func captureRegex(tpl, txt string) map[string]string {
 	re := regexp.MustCompile(tpl)
 	values := re.FindStringSubmatch(txt)
+	if values == nil {
+		return nil
+	}
 	keys := re.SubexpNames()
 	outMap := make(map[string]string)
 	for i := 1; i < len(keys); i++ {
@@ -97,15 +94,42 @@ func transform(ts string, data interface{}) string {
 	return buf.String()
 }
 
-func callHTTP(url string) {
-	fmt.Println("call\t>", url)
-	resp, err := http.Get(url)
-	if err != nil {
-		fmt.Println("error 1:", err)
-		return
-	}
-	defer resp.Body.Close()
+var c Conf
+
+func main() {
+	c.parse("conf.yaml")
+	fmt.Println("---- ---- ---- ----")
+	fmt.Println(time.Now())
 	fmt.Println(".")
+	http.HandleFunc("/", handleAll)
+	http.ListenAndServe(":6174", nil)
+}
+
+func handleAll(w http.ResponseWriter, req *http.Request) {
+	fullURL := req.URL.Path + "?" + req.URL.RawQuery
+	method := req.Method
+	fmt.Println(method, fullURL)
+
+	call, err := c.match(method, fullURL)
+	if err == nil {
+		dur := time.Duration(500 + rand.Intn(500))
+		time.Sleep(dur * time.Millisecond)
+		callHTTP(call)
+	}
+}
+
+func callHTTP(call Call) {
+	fmt.Println(":", call.method(), call.URL)
+	request, err := http.NewRequest(call.Method, call.URL, nil)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	resp, err := http.DefaultClient.Do(request)
+	if err != nil {
+		fmt.Println(":", "Error: Unable to connect")
+	} else {
+		defer resp.Body.Close()
+	}
 }
 
 func getBody(body io.ReadCloser) string {

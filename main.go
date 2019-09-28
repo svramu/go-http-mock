@@ -11,6 +11,7 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
+	"os"
 	"regexp"
 	"strconv"
 	"time"
@@ -96,12 +97,20 @@ func transform(ts string, data interface{}) string {
 	return buf.String()
 }
 
+const appVersion = "go-http-mock 0.7.2 beta"
+
 var c Conf
 
 func main() {
+	version := flag.Bool("v", false, "prints current app version")
 	port := flag.Int("p", 6174, "port number to run at")
 	conf := flag.String("c", "conf.yaml", "config yaml file path")
 	flag.Parse()
+	if *version {
+		fmt.Println(appVersion)
+		os.Exit(0)
+	}
+
 	strPort := strconv.Itoa(*port)
 
 	c.parse(*conf)
